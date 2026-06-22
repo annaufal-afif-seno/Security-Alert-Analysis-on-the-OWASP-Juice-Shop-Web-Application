@@ -19,8 +19,7 @@ TOPIK / TOOL
 ===========================================================================
 
   NamaKelompok_ZAP/
-  ├── Laporan_Praktikum.pdf         → Laporan lengkap dalam format PDF
-  ├── Slide_Presentasi.pdf          → Slide presentasi hasil praktikum
+
   ├── evidence/
   │   ├── screenshot_proxy_setting.png   → Bukti konfigurasi proxy ZAP & Firefox
   │   ├── screenshot_http_history.png    → Bukti tab History ZAP menangkap traffic
