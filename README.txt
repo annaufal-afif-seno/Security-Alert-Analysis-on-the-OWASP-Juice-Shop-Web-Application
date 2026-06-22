@@ -1,17 +1,11 @@
 ===========================================================================
-  README — PANDUAN ISI FOLDER PENGUMPULAN
-  Praktikum Ethical Hacking | OWASP ZAP + OWASP Juice Shop
-  Mata Kuliah : Ethical Hacking / Keamanan Aplikasi Web
-  Dosen       : Hendi Hermawan, S.T., M.T.I
-  Pertemuan   : 12 / Kelas A
-  Tanggal     : Jumat, 22 Mei 2026
+OWASP ZAP + OWASP Juice Shop
 ===========================================================================
 
-NAMA KELOMPOK
+NAMA 
 -------------
-  - Annaufal Afif Seno       (2023071054)
-  - Khairun Nisa Al Hakim    (2024071001)
-  - Qurratu Farrasah Siregar (2024071017)
+  - Annaufal Afif Seno     
+
 
 TOPIK / TOOL
 ------------
