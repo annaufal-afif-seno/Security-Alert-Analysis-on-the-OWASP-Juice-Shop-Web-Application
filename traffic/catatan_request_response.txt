@@ -1,0 +1,351 @@
+===========================================================================
+  CATATAN REQUEST & RESPONSE HTTP
+  Praktikum Ethical Hacking — Analisis Alert Keamanan OWASP Juice Shop
+  Tool : OWASP ZAP 2.17.0 | Proxy : 127.0.0.1:8090
+  Target: http://127.0.0.1:3000
+  Tanggal: 21–22 Mei 2026
+  Kelompok: Annaufal Afif Seno, Khairun Nisa Al Hakim, Qurratu Farrasah Siregar
+===========================================================================
+
+---[ REQUEST #1 ]-----------------------------------------------------------
+TUJUAN    : Akses halaman login
+METHOD    : GET
+URL       : http://127.0.0.1:3000/#/login
+
+REQUEST HEADER:
+  GET /#/login HTTP/1.1
+  Host: 127.0.0.1:3000
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0)
+  Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+  Proxy-Connection: keep-alive
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+  Content-Type: text/html; charset=utf-8
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Feature-Policy: payment 'self'
+
+CATATAN   : Halaman login berhasil dimuat. Tidak ada token CSRF pada form.
+===========================================================================
+
+---[ REQUEST #2 ]-----------------------------------------------------------
+TUJUAN    : Login dengan kredensial valid
+METHOD    : POST
+URL       : http://127.0.0.1:3000/rest/user/login
+
+REQUEST HEADER:
+  POST /rest/user/login HTTP/1.1
+  Host: 127.0.0.1:3000
+  Content-Type: application/json
+  Content-Length: [panjang body]
+
+REQUEST BODY:
+  {
+    "email": "test@example.com",
+    "password": "test1234"
+  }
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+  Content-Type: application/json; charset=utf-8
+  X-Content-Type-Options: nosniff
+
+RESPONSE BODY (ringkasan):
+  {
+    "authentication": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...[JWT]",
+      "bid": 6,
+      "umail": "test@example.com"
+    }
+  }
+
+CATATAN   : Login berhasil. Server mengembalikan JWT token. Token digunakan
+            sebagai cookie sesi tanpa flag HttpOnly, Secure, atau SameSite.
+===========================================================================
+
+---[ REQUEST #3 ]-----------------------------------------------------------
+TUJUAN    : Percobaan login dengan kredensial salah
+METHOD    : POST
+URL       : http://127.0.0.1:3000/rest/user/login
+
+REQUEST BODY:
+  {
+    "email": "salah@example.com",
+    "password": "wrongpassword"
+  }
+
+RESPONSE HEADER:
+  HTTP/1.1 401 Unauthorized
+  Content-Type: application/json; charset=utf-8
+
+RESPONSE BODY:
+  {
+    "error": "Invalid email or password."
+  }
+
+CATATAN   : Login ditolak dengan status 401. Pesan error cukup generik.
+===========================================================================
+
+---[ REQUEST #4 ]-----------------------------------------------------------
+TUJUAN    : Registrasi akun baru
+METHOD    : POST
+URL       : http://127.0.0.1:3000/api/Users
+
+REQUEST BODY:
+  {
+    "email": "newuser@example.com",
+    "password": "newpass123",
+    "passwordRepeat": "newpass123",
+    "securityQuestion": { "id": 1 },
+    "answer": "nama hewan peliharaan"
+  }
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+  Content-Type: application/json; charset=utf-8
+
+CATATAN   : Registrasi berhasil. Endpoint /api/Users terbuka tanpa proteksi.
+===========================================================================
+
+---[ REQUEST #5 ]-----------------------------------------------------------
+TUJUAN    : Melihat semua produk (tanpa filter)
+METHOD    : GET
+URL       : http://127.0.0.1:3000/rest/products/search?q=
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+  Content-Type: application/json; charset=utf-8
+
+CATATAN   : Semua produk ditampilkan. Parameter q= kosong diterima tanpa error.
+===========================================================================
+
+---[ REQUEST #6 ]-----------------------------------------------------------
+TUJUAN    : Pencarian produk dengan kata kunci
+METHOD    : GET
+URL       : http://127.0.0.1:3000/rest/products/search?q=apple
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+  Content-Type: application/json; charset=utf-8
+
+CATATAN   : Pencarian normal berhasil mengembalikan daftar produk yang cocok.
+===========================================================================
+
+---[ REQUEST #7 — TEMUAN KRITIS ]-------------------------------------------
+TUJUAN    : Uji SQL Injection pada parameter pencarian
+METHOD    : GET
+URL       : http://127.0.0.1:3000/rest/products/search?q='
+
+RESPONSE HEADER:
+  HTTP/1.1 500 Internal Server Error
+  Content-Type: application/json; charset=utf-8
+
+RESPONSE BODY (ringkasan):
+  {
+    "error": {
+      "message": "SQLITE_ERROR: ...",
+      "stack": "SequelizeDatabaseError: ..."
+    }
+  }
+
+CATATAN   : !! INDIKASI SQL INJECTION !!
+            Server mengembalikan HTTP 500 disertai pesan error database SQLite
+            saat menerima karakter tanda petik tunggal (').
+            Ini mengindikasikan input tidak disanitasi sebelum diproses ke query.
+===========================================================================
+
+---[ REQUEST #8 ]-----------------------------------------------------------
+TUJUAN    : Pencarian produk yang tidak ada
+METHOD    : GET
+URL       : http://127.0.0.1:3000/rest/products/search?q=xyznotfound
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+  Content-Type: application/json; charset=utf-8
+
+RESPONSE BODY:
+  { "status": "success", "data": [] }
+
+CATATAN   : Pencarian menghasilkan array kosong — handling normal.
+===========================================================================
+
+---[ REQUEST #9 ]-----------------------------------------------------------
+TUJUAN    : Update username pada halaman profil
+METHOD    : PUT
+URL       : http://127.0.0.1:3000/api/Users/6
+
+REQUEST HEADER:
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...[JWT]
+  Content-Type: application/json
+
+REQUEST BODY:
+  { "username": "TestUser2026" }
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+
+CATATAN   : Perubahan username berhasil. Endpoint memerlukan token JWT valid.
+===========================================================================
+
+---[ REQUEST #10 ]----------------------------------------------------------
+TUJUAN    : Tambah produk ke keranjang belanja
+METHOD    : POST
+URL       : http://127.0.0.1:3000/api/BasketItems
+
+REQUEST BODY:
+  {
+    "ProductId": 1,
+    "BasketId": 6,
+    "quantity": 1
+  }
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+
+CATATAN   : Produk berhasil ditambahkan ke keranjang.
+===========================================================================
+
+---[ REQUEST #11 ]----------------------------------------------------------
+TUJUAN    : Update jumlah item di keranjang
+METHOD    : PUT
+URL       : http://127.0.0.1:3000/api/BasketItems/1
+
+REQUEST BODY:
+  { "quantity": 3 }
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+
+CATATAN   : Quantity berhasil diperbarui.
+===========================================================================
+
+---[ REQUEST #12 ]----------------------------------------------------------
+TUJUAN    : Hapus item dari keranjang
+METHOD    : DELETE
+URL       : http://127.0.0.1:3000/api/BasketItems/1
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+
+CATATAN   : Item berhasil dihapus dari keranjang.
+===========================================================================
+
+---[ REQUEST #13 ]----------------------------------------------------------
+TUJUAN    : Percobaan login sebagai admin (gagal)
+METHOD    : POST
+URL       : http://127.0.0.1:3000/rest/user/login
+
+REQUEST BODY:
+  {
+    "email": "admin@juice-sh.op",
+    "password": "wrongadminpass"
+  }
+
+RESPONSE HEADER:
+  HTTP/1.1 401 Unauthorized
+
+CATATAN   : Akses admin ditolak — password salah. Tidak ada percobaan
+            bypass lebih lanjut (sesuai batasan etik praktikum).
+===========================================================================
+
+---[ REQUEST #14 ]----------------------------------------------------------
+TUJUAN    : Akses halaman administrasi tanpa hak admin
+METHOD    : GET
+URL       : http://127.0.0.1:3000/#/administration
+
+RESPONSE HEADER:
+  HTTP/1.1 401 Unauthorized
+
+CATATAN   : Akses halaman admin ditolak / redirect. Proteksi route berfungsi.
+===========================================================================
+
+---[ REQUEST #15 — TEMUAN UTAMA: CSRF & CSP ]-------------------------------
+TUJUAN    : Akses halaman profil (menghasilkan alert ZAP)
+METHOD    : POST
+URL       : http://127.0.0.1:3000/profile
+
+RESPONSE HEADER:
+  HTTP/1.1 200 OK
+  Access-Control-Allow-Origin: *
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Feature-Policy: payment 'self'
+  Content-Security-Policy: img-src 'self' /assets/public/images/uploads/default.svg;
+                           script-src 'self' 'unsafe-eval'
+  Set-Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.[...].; Path=/
+  Content-Type: text/html; charset=utf-8
+  Date: Thu, 21 May 2026 12:23:18 GMT
+  Connection: keep-alive
+
+FORM DITEMUKAN (tanpa token CSRF):
+  <form action="/profile/image/file" style="..." method="post"
+        enctype="multipart/form-data">
+    <!-- Tidak ada <input type="hidden" name="_csrf"> -->
+  </form>
+
+ZAP ALERTS YANG DIPICU:
+  [1] Absence of Anti-CSRF Tokens
+      Risk: Medium | Confidence: Low | CWE: 352 | WASC: 9
+  [2] CSP: Wildcard Directive (unsafe-eval)
+      Risk: Medium | Confidence: High | CWE: 693 | WASC: 15
+
+ANALISIS SET-COOKIE:
+  Nama    : token
+  Nilai   : eyJhbGci... (JWT)
+  Path    : /
+  HttpOnly: TIDAK ADA  <- RENTAN session hijacking via XSS
+  Secure  : TIDAK ADA  <- Cookie dikirim via HTTP biasa
+  SameSite: TIDAK ADA  <- CSRF lintas situs dimungkinkan
+
+CATATAN   : Endpoint ini memicu 2 dari 3 temuan utama. Cookie sesi tanpa
+            flag keamanan divalidasi manual dari header response ini.
+===========================================================================
+
+---[ REQUEST #16 — TEMUAN UTAMA: ERROR DISCLOSURE ]-------------------------
+TUJUAN    : Akses endpoint /api secara langsung
+METHOD    : GET
+URL       : http://127.0.0.1:3000/api
+
+RESPONSE HEADER:
+  HTTP/1.1 500 Internal Server Error
+  Access-Control-Allow-Origin: *
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Feature-Policy: payment 'self'
+  X-Recruiting: /#/jobs
+  Content-Type: text/html; charset=utf-8
+  Date: Thu, 21 May 2026 11:33:52 GMT
+  content-length: 2990
+
+RESPONSE BODY (sebagian):
+  <title>Error: Unexpected path: /api</title>
+
+ZAP ALERT YANG DIPICU:
+  [3] Application Error Disclosure
+      Risk: Low | Confidence: Medium | CWE: 550 | WASC: 13
+      Evidence: <title>Error: Unexpected path: /api</title>
+
+CATATAN   : Server mengekspos detail path internal pada pesan error HTTP 500.
+            Informasi ini membantu penyerang dalam tahap reconnaissance.
+===========================================================================
+
+===========================================================================
+  RINGKASAN TEMUAN DARI LALU LINTAS HTTP
+===========================================================================
+
+  No | Temuan                         | Risk   | CWE | Endpoint
+  ---+--------------------------------+--------+-----+----------------------
+  1  | Absence of Anti-CSRF Tokens    | Medium | 352 | /profile
+  2  | CSP: Wildcard Directive        | Medium | 693 | /profile
+  3  | Application Error Disclosure   | Low    | 550 | /api
+  +  | Missing Cookie Security Flags  | Medium | —   | /profile (validasi)
+  *  | Indikasi SQL Injection          | High   | 89  | /rest/products/search
+
+  Total request tertangkap ZAP: 16 request tercatat manual
+  Total alert otomatis ZAP    : 3 alert utama
+  Metode pengujian            : Passive scan + manual explore
+
+===========================================================================
+  END OF FILE
+===========================================================================
