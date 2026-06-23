@@ -34,45 +34,30 @@ TOPIK / TOOL
   DESKRIPSI ISI FILE
 ===========================================================================
 
-1. Laporan_Praktikum.pdf
-   Laporan lengkap praktikum mencakup:
-   - Latar belakang dan ruang lingkup pengujian
-   - Lingkungan dan konfigurasi praktikum
-   - Langkah konfigurasi proxy ZAP dan Firefox
-   - Tabel endpoint yang dieksplorasi (14 endpoint)
-   - Tiga temuan keamanan utama beserta bukti teknis
-   - Validasi manual (Missing Cookie Security Flags)
-   - Rekomendasi perbaikan
-   - Kesimpulan dan daftar pustaka
-
-2. Slide_Presentasi.pdf
-   Slide ringkasan hasil praktikum untuk presentasi kelas,
-   mencakup temuan utama, bukti, dan rekomendasi.
-
-3. evidence/screenshot_proxy_setting.png
+1. evidence/screenshot_proxy_setting.png
    Tangkapan layar yang menunjukkan:
    - Konfigurasi Local Proxies di OWASP ZAP (127.0.0.1:8090)
    - Konfigurasi Manual Proxy di Firefox (127.0.0.1:8090)
 
-4. evidence/screenshot_http_history.png
+2. evidence/screenshot_http_history.png
    Tangkapan layar tab History ZAP yang memperlihatkan request
    HTTP dari Firefox tertangkap oleh proxy ZAP.
 
-5. evidence/screenshot_finding_1.png
+3. evidence/screenshot_finding_1.png
    Tangkapan layar alert ZAP: "Absence of Anti-CSRF Tokens"
    - Risk: Medium | CWE-352 | Endpoint: /profile
 
-6. evidence/screenshot_finding_2.png
+4. evidence/screenshot_finding_2.png
    Tangkapan layar alert ZAP: "CSP: Wildcard Directive"
    - Risk: Medium | CWE-693 | Endpoint: /profile
    - Directive bermasalah: script-src 'self' 'unsafe-eval'
 
-7. evidence/screenshot_finding_3.png
+5. evidence/screenshot_finding_3.png
    Tangkapan layar alert ZAP: "Application Error Disclosure"
    - Risk: Low | CWE-550 | Endpoint: /api
    - Evidence: <title>Error: Unexpected path: /api</title>
 
-8. traffic/catatan_request_response.txt
+6. traffic/catatan_request_response.txt
    Catatan manual seluruh request dan response HTTP yang
    tertangkap ZAP selama sesi eksplorasi, mencakup:
    - 16 pasang request/response
